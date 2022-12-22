@@ -3,6 +3,7 @@ import selectors
 import socket
 import sys
 import time
+from psutil import cpu_count, disk_usage, virtual_memory
 
 # любой ip, порт 8888
 HOST, PORT = '', 8888
@@ -13,24 +14,9 @@ logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 
 
-def send_message(selector: selectors.BaseSelector, sock: socket.socket):
-    """Отправка приветственного сообщения."""
-
-    data = sock.recv(2048)
-    if data == 'hi':
-        # отправка данных
-        sock.send(b'Welcome!')
-    elif data == 'time':
-        sock.send(time.ctime().encode(encodings='UTF-8'))
-    else:
-        logger.info('closing connection %s', sock)
-        selector.unregister(sock)
-        sock.close()
-
-
 def new_connection(selector: selectors.BaseSelector, sock: socket.socket):
     """
-    Получение нового соединения для регистрации метода обработки события ОС.
+    Получение нового соединения для регистрации метода обработки события.
     """
 
     new_conn, address = sock.accept()
@@ -38,18 +24,40 @@ def new_connection(selector: selectors.BaseSelector, sock: socket.socket):
     new_conn.setblocking(False)
 
     # передача на обработку события ОС
-    selector.register(new_conn, selectors.EVENT_READ, send_message)
-    # selector.register(new_conn, selectors.EVENT_READ, read_callback)
+    selector.register(new_conn, selectors.EVENT_READ, read_callback)
 
 
 def read_callback(selector: selectors.BaseSelector, sock: socket.socket):
-    """Чтение и отправка данных."""
+    """Обработка команд."""
+
+    mb_in_gb = 1048576
 
     # получение данных
     data = sock.recv(1024)
-    if data:
-        # отправка данных
-        sock.send(data)
+    # обработка данных
+    if isinstance(data, bytes):
+        command = data.decode(encoding='UTF-8').strip()
+        if command == 'hi':
+            logger.info('sending greetings')
+            sock.send(b'Welcome!\n')
+        elif command == 'time':
+            sock.send(time.ctime().encode())
+        elif command == 'echo':
+            logger.info('sending echo %s', command)
+            sock.send(data)
+        elif command == 'info':
+            memory = virtual_memory().total // mb_in_gb
+            disk_space = disk_usage("/").total // mb_in_gb
+            info = f'CPU count: {cpu_count()} mem: {memory} disk: {disk_space}\n'
+            logger.info('sending info %s', info.strip())
+            sock.send(info.encode())
+        elif command == 'quit':
+            logger.info('closing connection %s', sock)
+            selector.unregister(sock)
+            sock.close()
+        else:
+            logger.info('unknowing command received %s', command)
+            sock.send(b'Command unknown!\n')
     else:
         logger.info('closing connection %s', sock)
         selector.unregister(sock)
