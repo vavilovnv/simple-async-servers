@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime
 
-from utils import get_logger, HOST, PORT2
+from utils import HOST, PORT2, get_logger
 
 logger = get_logger()
 
@@ -28,7 +28,8 @@ class Server(asyncio.Protocol):
             return
         self._conn_time += 1
         if self._conn_time > 0 and self._conn_time % 2 == 0:
-            msg = f'time: {datetime.now().strftime("%H:%M:%S")} clints: {Server.CLIENTS_COUNT}\n'
+            time = datetime.now().strftime("%H:%M:%S")
+            msg = f'time: {time} clients: {Server.CLIENTS_COUNT}\n'
             self.transport.write(msg.encode())
         if self._conn_time > 5:
             msg = f'disconnect in: {10 - self._conn_time} sec.\n'

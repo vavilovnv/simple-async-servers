@@ -1,9 +1,9 @@
 import selectors
 import socket
 import time
-from psutil import cpu_count, disk_usage, virtual_memory
 
-from utils import get_logger, HOST, PORT1
+from psutil import cpu_count, disk_usage, virtual_memory
+from utils import HOST, PORT1, get_logger
 
 logger = get_logger()
 
@@ -42,7 +42,8 @@ def read_callback(selector: selectors.BaseSelector, sock: socket.socket):
         elif command == 'info':
             memory = virtual_memory().total // mb_in_gb
             disk_space = disk_usage("/").total // mb_in_gb
-            info = f'CPU count: {cpu_count()} mem: {memory} disk: {disk_space}\n'
+            cpu = cpu_count()
+            info = f'CPU count: {cpu} mem: {memory} disk: {disk_space}\n'
             logger.info('sending info %s', info.strip())
             sock.send(info.encode())
         elif command == 'quit':
@@ -82,23 +83,23 @@ def serve(host: str = HOST, port: int = PORT1):
 
     # Запускаем сервер на прослушивание новых сообщений
     with selectors.SelectSelector() as selector:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
 
             # включаем переиспользование портов
-            server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
+            server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
 
             # создаем серверный сокет для обмена данными между процессами
-            server_socket.bind((host, port))
+            server.bind((host, port))
 
             # переводим сокет в режим прослушки запросов
-            server_socket.listen()
+            server.listen()
 
             # Делаем сокет не блокирующим
-            server_socket.setblocking(False)
+            server.setblocking(False)
             logger.info('Server started on port %s', port)
 
             # Регистрация события для вызова new_connection
-            selector.register(server_socket, selectors.EVENT_READ, new_connection)
+            selector.register(server, selectors.EVENT_READ, new_connection)
 
             while True:
                 try:

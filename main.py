@@ -1,6 +1,5 @@
 from servers import http_server, tcp_server
 
-
 if __name__ == '__main__':
 
     while True:
@@ -13,4 +12,3 @@ if __name__ == '__main__':
             # запускаем tcp-сервер на исполнение
             tcp_server.serve()
             break
-
