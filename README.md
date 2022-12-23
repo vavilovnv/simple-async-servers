@@ -1,4 +1,4 @@
-![workflow](https://https://github.com/vavilovnv/simple-async-servers/actions/workflows/test.yml/badge.svg)  
+![workflow](https://github.com/vavilovnv/simple-async-servers/actions/workflows/test.yml/badge.svg)  
 
 # Примеры шаблонов асинхронных HTTP и TCP серверов.
 
